@@ -41,8 +41,7 @@ npm install
 
 2️⃣ Add your **private keys** to `private.key` (one per line for multiple wallets):
 ```bash
-echo "private_key_1" > private.key
-echo "private_key_2" >> private.key
+nano private.key
 ```
 
 3️⃣ Start the bot:
@@ -61,11 +60,11 @@ cd Monad-Testnet-Automation
 npm install
 ```
 
-2️⃣ Add your **private keys** to `private.key` (using Notepad or PowerShell, one per line for multiple wallets):
+2️⃣ Add your **private keys** to `private.key` (using Notepad/ Notepad++ or PowerShell, one per line for multiple wallets):
 ```powershell
 notepad private.key  # Open Notepad to edit the file
 ```
-Paste your **private keys**, save the file, and close Notepad.
+Paste your **private keys**, save the file, and close Notepad/ Notepad++.
 
 3️⃣ Start the bot:
 ```powershell
