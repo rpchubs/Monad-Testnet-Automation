@@ -19,7 +19,7 @@ class Dashboard {
       align: "center",
       valign: "middle",
       content:
-        "{bold}Monad BOT{/bold}\nGithub: https://github.com/rpchubs | Telegram: https://t.me/chat_RPC_Community",
+        "{bold}Monad Testnet Automation{/bold}\nGithub: https://github.com/rpchubs | Telegram: https://t.me/chat_RPC_Community",
       tags: true,
       style: {
         fg: "white",
