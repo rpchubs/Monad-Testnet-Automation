@@ -99,8 +99,9 @@ Modify the `config/config.json` file to customize settings:
 
 ### 🔄 Supported Services
 The bot interacts with the following services:
-- **Swapping**: Rubic Swap, Izumi Swap, Bean Swap
-- **Staking**: Magma Staking, aPriori Staking
+- **Transactions**: Send random MON to wallets in wallets.txt, Deploy random smart contract
+- **Swapping**: Uniswap, Rubic Swap, Izumi Swap, Bean Swap, Monorail
+- **Staking**: Magma Staking, aPriori Staking, Kitsu Staking
 - **Token Operations**: Balance checking, automated wrapping/unstaking
 - **Multiple Wallets**: Supports running transactions for multiple wallets in a loop.
 
