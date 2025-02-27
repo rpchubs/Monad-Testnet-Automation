@@ -21,6 +21,7 @@
     "axios": "^1.7.9",
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.11.0",
-    "ethers": "^6.13.5"
+    "ethers": "^6.13.5",
+    "solc": "^0.8.28"
   }
 }

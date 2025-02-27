@@ -1,0 +1,1 @@
+wallets for SendTxService, one address per line

@@ -5,13 +5,18 @@ const SwapService = require("./services/SwapService");
 const StakingService = require("./services/StakingService");
 const aPrioriStakingService = require("./services/aPrioriStakingService");
 const BeanswapService = require("./services/BeanSwapService");
+const UniswapService = require("./services/UniswapService");
+const SendTxService = require("./services/SendTxService");
 const TokenService = require("./services/TokenService");
+const MonorailService = require("./services/MonorailService");
+const DeployService = require("./services/DeployService");
+const KitsuService = require("./services/KitsuService");
 const config = require(path.join(__dirname, "./config/config.json"));
 const Utils = require("./lib/utils");
 
 class Application {
   constructor(privateKey) {
-    this.privateKey = privateKey; 
+    this.privateKey = privateKey;
 
     const wallet = new ethers.Wallet(this.privateKey);
     this.walletAddress = wallet.address;
@@ -60,8 +65,19 @@ class Application {
       this.dashboard.setCycles(0, config.cycles.default);
 
       const services = {
+        sendTx: {
+          name: "SendTx",
+          service: SendTxService,
+        },
+        deploy: { name: "Deploy", service: DeployService },
+        monorail: { name: "Monorail", service: MonorailService, address: config.contracts.monorail.router },
         rubicSwap: { name: "Rubic Swap", service: SwapService },
         izumiSwap: { name: "Izumi Swap", service: SwapService },
+        uniswap: {
+          name: "Uniswap",
+          service: UniswapService,
+          address: config.contracts.uniswap.router,
+        },
         beanSwap: {
           name: "Bean Swap",
           service: BeanswapService,
@@ -76,6 +92,11 @@ class Application {
           name: "aPriori Staking",
           service: aPrioriStakingService,
           address: config.contracts.aPrioriStaking,
+        },
+        kitsu: {
+          name: "Kitsu",
+          service: KitsuService,
+          address: config.contracts.kitsu.router 
         },
       };
 
@@ -96,7 +117,7 @@ class Application {
         }
         await Utils.delay(1000);
       }
-      
+
       this.dashboard.updateLineChart([
         { time: new Date().toLocaleTimeString(), amount: 0 },
       ]);
@@ -150,10 +171,10 @@ class Application {
     try {
       const amount = Utils.getRandomAmount();
       this.dashboard.setCycles(this.cycleCount, config.cycles.default);
-  
+
       const formattedAmount = parseFloat(ethers.formatEther(amount)).toFixed(4);
       this.dashboard.updateLog(`Starting cycle ${this.cycleCount} with ${formattedAmount} MON`);
-  
+
       this.transactionHistory.push({
         time: new Date().toLocaleTimeString(),
         amount: formattedAmount,
@@ -162,62 +183,122 @@ class Application {
         this.transactionHistory.shift();
       }
       this.dashboard.updateLineChart(this.transactionHistory);
-  
+
       const serviceStatus = [];
-  
+
       for (const [name, service] of Object.entries(this.services)) {
         try {
           if (name === "beanSwap") {
             serviceStatus.push([name, "Running", new Date().toLocaleTimeString()]);
             this.dashboard.updateTable(serviceStatus);
-        
+
             const wrapResult = await service.wrapMON(amount);
             this.dashboard.updateLog(`${name}: Converted MON to USDC - ${wrapResult.status}`);
-        
+
             await Utils.delay(Utils.getRandomDelay());
-        
+
             const unwrapResult = await service.unwrapMON();
             this.dashboard.updateLog(`${name}: Converted USDC to MON - ${unwrapResult.status}`);
-        
+
             serviceStatus.pop();
             serviceStatus.push([name, "Active", new Date().toLocaleTimeString()]);
           } else if (service instanceof SwapService) {
             serviceStatus.push([name, "Running", new Date().toLocaleTimeString()]);
             this.dashboard.updateTable(serviceStatus);
-        
+
             const wrapResult = await service.wrapMON(amount);
             this.dashboard.updateLog(`${name}: Wrapped MON - ${wrapResult.status}`);
-        
+
             await Utils.delay(Utils.getRandomDelay());
-        
+
             const unwrapResult = await service.unwrapMON(amount);
             this.dashboard.updateLog(`${name}: Unwrapped MON - ${unwrapResult.status}`);
-        
+
             serviceStatus.pop();
             serviceStatus.push([name, "Active", new Date().toLocaleTimeString()]);
-          }
-          else if (typeof service.stakeaPriori === "function") {
+          } else if (typeof service.stakeaPriori === "function") {
             serviceStatus.push([name, "Running", new Date().toLocaleTimeString()]);
             this.dashboard.updateTable(serviceStatus);
-  
+
             const stakePriResult = await service.stakeaPriori(amount);
             this.dashboard.updateLog(`${name}: aPriori Staked MON - ${stakePriResult.status}`);
-  
+
             serviceStatus.pop();
             serviceStatus.push([name, "Active", new Date().toLocaleTimeString()]);
-          }
-          else if (typeof service.stake === "function" && typeof service.unstake === "function") {
+          } else if (typeof service.stake === "function" && typeof service.unstake === "function") {
             serviceStatus.push([name, "Running", new Date().toLocaleTimeString()]);
             this.dashboard.updateTable(serviceStatus);
-  
+
             const stakeResult = await service.stake(amount);
             this.dashboard.updateLog(`${name}: Staked MON - ${stakeResult.status}`);
-  
+
             await Utils.delay(Utils.getRandomDelay());
-  
+
             const unstakeResult = await service.unstake(amount);
             this.dashboard.updateLog(`${name}: Unstaked MON - ${unstakeResult.status}`);
-  
+
+            serviceStatus.pop();
+            serviceStatus.push([name, "Active", new Date().toLocaleTimeString()]);
+          } else if (name === "uniswap") {
+            serviceStatus.push([name, "Running", new Date().toLocaleTimeString()]);
+            this.dashboard.updateTable(serviceStatus);
+
+            const tokenSymbols = Object.keys(config.contracts.uniswap.tokens);
+            const tokenSymbol = tokenSymbols[Math.floor(Math.random() * tokenSymbols.length)];
+
+            const swapEthResult = await service.swapEthForTokens(tokenSymbol, amount);
+            this.dashboard.updateLog(`uniswap: Swap MON -> ${tokenSymbol} => ${swapEthResult.status}`);
+
+            await Utils.delay(Utils.getRandomDelay());
+
+            const swapTokenResult = await service.swapTokensForEth(tokenSymbol);
+            this.dashboard.updateLog(`uniswap: Swap ${tokenSymbol} -> MON => ${swapTokenResult.status}`);
+
+            serviceStatus.pop();
+            serviceStatus.push([name, "Active", new Date().toLocaleTimeString()]);
+          } else if (name === "sendTx") {
+            serviceStatus.push([name, "Running", new Date().toLocaleTimeString()]);
+            this.dashboard.updateTable(serviceStatus);
+
+            const sendTxResult = await service.sendRandomTransaction();
+            this.dashboard.updateLog(`sendTx: Transaction sent => ${sendTxResult.status}`);
+
+            serviceStatus.pop();
+            serviceStatus.push([name, "Active", new Date().toLocaleTimeString()]);
+          } else if (name === "monorail") {
+            serviceStatus.push([name, "Running", new Date().toLocaleTimeString()]);
+            this.dashboard.updateTable(serviceStatus);
+
+            const monorailResult = await service.sendTransaction();
+            this.dashboard.updateLog(`monorail: Transaction sent => ${monorailResult.status}`);
+
+            serviceStatus.pop();
+            serviceStatus.push([name, "Active", new Date().toLocaleTimeString()]);
+          } else if (name === "deploy") {
+            serviceStatus.push([name, "Running", new Date().toLocaleTimeString()]);
+            this.dashboard.updateTable(serviceStatus);
+
+            const deployResult = await service.deployContracts(1);
+            if (deployResult && deployResult.length > 0) {
+              this.dashboard.updateLog(`Deploy contract: ${deployResult[0].status}`);
+            } else {
+              this.dashboard.updateLog("Deploy contract: Deployment result is empty");
+            }
+
+            serviceStatus.pop();
+            serviceStatus.push([name, "Active", new Date().toLocaleTimeString()]);
+          } else if (name === "kitsu") {
+            serviceStatus.push([name, "Running", new Date().toLocaleTimeString()]);
+            this.dashboard.updateTable(serviceStatus);
+      
+            const stakeKitsuResult = await service.stakeMON();
+            this.dashboard.updateLog(`${name}: Staked MON => ${stakeKitsuResult.status}`);
+      
+            // await Utils.delay(Utils.getRandomDelay());
+      
+            // const unstakeKitsuResult = await service.unstakeGMON();
+            // this.dashboard.updateLog(`${name}: Unstaked gMON => ${unstakeKitsuResult.status}`);
+      
             serviceStatus.pop();
             serviceStatus.push([name, "Active", new Date().toLocaleTimeString()]);
           }
@@ -226,12 +307,12 @@ class Application {
           serviceStatus.push([name, "Error", new Date().toLocaleTimeString()]);
         }
       }
-  
+
       this.dashboard.updateTable(serviceStatus);
-  
+
       const tokens = await this.tokenService.getTokenBalances(this.wallet.address);
       this.dashboard.updateTokens(tokens);
-  
+
       const balanceWei = await this.wallet.provider.getBalance(this.wallet.address);
       const formattedBalanceUpdated = parseFloat(ethers.formatEther(balanceWei)).toFixed(4);
       this.dashboard.updateBalance(formattedBalanceUpdated);
@@ -240,7 +321,7 @@ class Application {
       this.dashboard.updateLog(`Cycle error: ${error.message}`);
       throw error;
     }
-  }  
+  }
 }
 
 if (require.main === module) {

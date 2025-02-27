@@ -4,10 +4,6 @@ const Utils = require("../lib/utils");
 const config = require("../config/config.json");
 
 class BeanswapService extends BaseService {
-  /**
-   * @param {string} contractAddress
-   * @param {ethers.Wallet} wallet
-   */
   constructor(contractAddress, wallet) {
     super(wallet, wallet.provider);
     this.contractAddress = contractAddress;
@@ -17,7 +13,7 @@ class BeanswapService extends BaseService {
     const usdcAddress = require("../config/BeanSwapABI").USDC_CONTRACT;
     this.routerAddress = routerAddress;
     this.wmonAddress = wmonAddress;
-    this.usdcAddress = usdcAddress
+    this.usdcAddress = usdcAddress;
     this.contract = new ethers.Contract(routerAddress, beanSwapABI, this.wallet);
   }
 
@@ -28,10 +24,8 @@ class BeanswapService extends BaseService {
   async wrapMON(amount) {
     try {
       await this.checkGasPrice();
-
       const currentTime = Math.floor(Date.now() / 1000);
       const deadline = currentTime + 6 * 3600;
-      
       const tx = await this.contract.swapExactETHForTokens(
         0,
         [this.wmonAddress, this.usdcAddress],
@@ -39,64 +33,54 @@ class BeanswapService extends BaseService {
         deadline,
         { value: amount, gasLimit: BigInt(500000) }
       );
-
       const receipt = await tx.wait();
       return {
         status: receipt.status === 1 ? "Success" : "Failed",
         txHash: receipt.transactionHash,
       };
     } catch (error) {
-      throw error;
+      await Utils.delay(1000);
+      return this.wrapMON(amount);
     }
   }
 
   async unwrapMON() {
     try {
       await this.checkGasPrice();
-  
       const currentTime = Math.floor(Date.now() / 1000);
       const deadline = currentTime + 6 * 3600;
-  
       const usdcABI = ["function balanceOf(address owner) view returns (uint256)"];
       const usdcContract = new ethers.Contract(this.usdcAddress, usdcABI, this.wallet);
       const balanceRaw = await usdcContract.balanceOf(this.wallet.address);
       const usdcBalance = BigInt(balanceRaw);
-      
       if (usdcBalance === BigInt(0)) {
         throw new Error("USDC balance is zero, nothing to unwrap.");
       }
-  
       const amountUSDC = usdcBalance;
-  
       await this.approveTokenIfNeeded(this.usdcAddress, amountUSDC, this.wallet.address);
-  
       const tx = await this.contract.swapExactTokensForETH(
-        amountUSDC,                    
-        0,                             
-        [this.usdcAddress, this.wmonAddress], 
-        this.wallet.address,        
+        amountUSDC,
+        0,
+        [this.usdcAddress, this.wmonAddress],
+        this.wallet.address,
         deadline,
         { gasLimit: ethers.parseUnits("500000", 0) }
       );
-  
       const receipt = await tx.wait();
       return {
-        status: receipt.status === 1 ? "Success" : "Failed",
-        txHash: receipt.transactionHash,
-        url: Utils.logTransaction(receipt.transactionHash)
+        status: receipt.status === 1 ? "Success" : "Failed"
       };
     } catch (error) {
-      throw error;
+      await Utils.delay(1000);
+      return this.unwrapMON();
     }
   }
-  
+
   async swapExactETHForTokens(tokenAddress, amount) {
     try {
       await this.checkGasPrice();
-
       const currentTime = Math.floor(Date.now() / 1000);
       const deadline = currentTime + 6 * 3600;
-
       const tx = await this.contract.swapExactETHForTokens(
         0,
         [tokenAddress],
@@ -104,24 +88,21 @@ class BeanswapService extends BaseService {
         deadline,
         { value: amount, gasLimit: BigInt(500000) }
       );
-
       const receipt = await tx.wait();
       return {
         status: receipt.status === 1 ? "Success" : "Failed",
-        txHash: receipt.transactionHash,
       };
     } catch (error) {
-      throw error;
+      await Utils.delay(1000);
+      return this.swapExactETHForTokens(tokenAddress, amount);
     }
   }
 
   async swapExactTokensForETH(tokenAddress, amount) {
     try {
       await this.checkGasPrice();
-
       const currentTime = Math.floor(Date.now() / 1000);
       const deadline = currentTime + 6 * 3600;
-
       const tx = await this.contract.swapExactTokensForETH(
         tokenAddress,
         amount,
@@ -129,23 +110,21 @@ class BeanswapService extends BaseService {
         deadline,
         { gasLimit: BigInt(500000) }
       );
-
       const receipt = await tx.wait();
       return {
         status: receipt.status === 1 ? "Success" : "Failed",
       };
     } catch (error) {
-      throw error;
+      await Utils.delay(1000);
+      return this.swapExactTokensForETH(tokenAddress, amount);
     }
   }
 
   async swapExactTokensForTokens(tokenAddressIn, tokenAddressOut, amount) {
     try {
       await this.checkGasPrice();
-
       const currentTime = Math.floor(Date.now() / 1000);
       const deadline = currentTime + 6 * 3600;
-
       const tx = await this.contract.swapExactTokensForTokens(
         tokenAddressIn,
         tokenAddressOut,
@@ -154,13 +133,13 @@ class BeanswapService extends BaseService {
         deadline,
         { gasLimit: BigInt(500000) }
       );
-
       const receipt = await tx.wait();
       return {
         status: receipt.status === 1 ? "Success" : "Failed",
       };
     } catch (error) {
-      throw error;
+      await Utils.delay(1000);
+      return this.swapExactTokensForTokens(tokenAddressIn, tokenAddressOut, amount);
     }
   }
 
