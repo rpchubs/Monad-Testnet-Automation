@@ -26,11 +26,11 @@ class KitsuService extends BaseService {
     return ethers.parseEther(amount.toFixed(6));
   }
 
-  async stakeMON(retry = 0) {
+  async stakeMON(retry = 0, maxRetries = 5) {
     try {
       const tx = {
         to: this.contractAddress,
-        data: "0xd5575982", 
+        data: "0xd5575982",
         gasLimit: this.gasLimitStake,
         value: this.stakeAmount,
       };
@@ -38,13 +38,15 @@ class KitsuService extends BaseService {
       await txResponse.wait();
       return { status: "Success" };
     } catch (error) {
-    //   console.error(`Stake failed (attempt ${retry + 1}): ${error.message}`);
-      await Utils.delay(1000);
-      return this.stakeMON(retry + 1);
+      if (retry < maxRetries) {
+        await Utils.delay(1000);
+        return this.stakeMON(retry + 1, maxRetries);
+      }
+      return { status: "Error", error: error.message };
     }
   }
 
-  async unstakeGMON(retry = 0) {
+  async unstakeGMON(retry = 0, maxRetries = 5) {
     try {
       const functionSelector = "0x6fed1ea7";
       const hexAmount = "0x" + this.stakeAmount.toString(16);
@@ -60,9 +62,11 @@ class KitsuService extends BaseService {
       await txResponse.wait();
       return { status: "Success" };
     } catch (error) {
-    //   console.error(`Unstake failed (attempt ${retry + 1}): ${error.message}`);
-      await Utils.delay(1000);
-      return this.unstakeGMON(retry + 1);
+      if (retry < maxRetries) {
+        await Utils.delay(1000);
+        return this.unstakeGMON(retry + 1, maxRetries);
+      }
+      return { status: "Error", error: error.message };
     }
   }
 }

@@ -21,7 +21,7 @@ class BeanswapService extends BaseService {
     await super.initialize();
   }
 
-  async wrapMON(amount) {
+  async wrapMON(amount, retry = 0, maxRetries = 5) {
     try {
       await this.checkGasPrice();
       const currentTime = Math.floor(Date.now() / 1000);
@@ -39,12 +39,15 @@ class BeanswapService extends BaseService {
         txHash: receipt.transactionHash,
       };
     } catch (error) {
-      await Utils.delay(1000);
-      return this.wrapMON(amount);
+      if (retry < maxRetries) {
+        await Utils.delay(1000);
+        return this.wrapMON(amount, retry + 1, maxRetries);
+      }
+      return { status: "Error", error: error.message };
     }
   }
 
-  async unwrapMON() {
+  async unwrapMON(retry = 0, maxRetries = 5) {
     try {
       await this.checkGasPrice();
       const currentTime = Math.floor(Date.now() / 1000);
@@ -67,16 +70,17 @@ class BeanswapService extends BaseService {
         { gasLimit: ethers.parseUnits("500000", 0) }
       );
       const receipt = await tx.wait();
-      return {
-        status: receipt.status === 1 ? "Success" : "Failed"
-      };
+      return { status: receipt.status === 1 ? "Success" : "Failed" };
     } catch (error) {
-      await Utils.delay(1000);
-      return this.unwrapMON();
+      if (retry < maxRetries) {
+        await Utils.delay(1000);
+        return this.unwrapMON(retry + 1, maxRetries);
+      }
+      return { status: "Error", error: error.message };
     }
   }
 
-  async swapExactETHForTokens(tokenAddress, amount) {
+  async swapExactETHForTokens(tokenAddress, amount, retry = 0, maxRetries = 5) {
     try {
       await this.checkGasPrice();
       const currentTime = Math.floor(Date.now() / 1000);
@@ -89,16 +93,17 @@ class BeanswapService extends BaseService {
         { value: amount, gasLimit: BigInt(500000) }
       );
       const receipt = await tx.wait();
-      return {
-        status: receipt.status === 1 ? "Success" : "Failed",
-      };
+      return { status: receipt.status === 1 ? "Success" : "Failed" };
     } catch (error) {
-      await Utils.delay(1000);
-      return this.swapExactETHForTokens(tokenAddress, amount);
+      if (retry < maxRetries) {
+        await Utils.delay(1000);
+        return this.swapExactETHForTokens(tokenAddress, amount, retry + 1, maxRetries);
+      }
+      return { status: "Error", error: error.message };
     }
   }
 
-  async swapExactTokensForETH(tokenAddress, amount) {
+  async swapExactTokensForETH(tokenAddress, amount, retry = 0, maxRetries = 5) {
     try {
       await this.checkGasPrice();
       const currentTime = Math.floor(Date.now() / 1000);
@@ -111,16 +116,17 @@ class BeanswapService extends BaseService {
         { gasLimit: BigInt(500000) }
       );
       const receipt = await tx.wait();
-      return {
-        status: receipt.status === 1 ? "Success" : "Failed",
-      };
+      return { status: receipt.status === 1 ? "Success" : "Failed" };
     } catch (error) {
-      await Utils.delay(1000);
-      return this.swapExactTokensForETH(tokenAddress, amount);
+      if (retry < maxRetries) {
+        await Utils.delay(1000);
+        return this.swapExactTokensForETH(tokenAddress, amount, retry + 1, maxRetries);
+      }
+      return { status: "Error", error: error.message };
     }
   }
 
-  async swapExactTokensForTokens(tokenAddressIn, tokenAddressOut, amount) {
+  async swapExactTokensForTokens(tokenAddressIn, tokenAddressOut, amount, retry = 0, maxRetries = 5) {
     try {
       await this.checkGasPrice();
       const currentTime = Math.floor(Date.now() / 1000);
@@ -134,12 +140,13 @@ class BeanswapService extends BaseService {
         { gasLimit: BigInt(500000) }
       );
       const receipt = await tx.wait();
-      return {
-        status: receipt.status === 1 ? "Success" : "Failed",
-      };
+      return { status: receipt.status === 1 ? "Success" : "Failed" };
     } catch (error) {
-      await Utils.delay(1000);
-      return this.swapExactTokensForTokens(tokenAddressIn, tokenAddressOut, amount);
+      if (retry < maxRetries) {
+        await Utils.delay(1000);
+        return this.swapExactTokensForTokens(tokenAddressIn, tokenAddressOut, amount, retry + 1, maxRetries);
+      }
+      return { status: "Error", error: error.message };
     }
   }
 

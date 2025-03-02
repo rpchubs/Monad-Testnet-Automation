@@ -34,23 +34,32 @@ contract Counter {
     const input = {
       language: "Solidity",
       sources: { "Counter.sol": { content: contractSource } },
-      settings: { outputSelection: { "*": { "*": ["abi", "evm.bytecode"] } } }
+      settings: {
+        outputSelection: { "*": { "*": ["abi", "evm.bytecode"] } }
+      }
     };
     const output = JSON.parse(solc.compile(JSON.stringify(input)));
     const contract = output.contracts["Counter.sol"].Counter;
     return { abi: contract.abi, bytecode: contract.evm.bytecode.object };
   }
 
-  async deployContract(contractName, retry = 0) {
+  async deployContract(contractName, retry = 0, maxRetries = 5) {
     try {
       const { abi, bytecode } = this.compileContract();
       const factory = new ethers.ContractFactory(abi, bytecode, this.wallet);
       const contract = await factory.deploy();
       await contract.waitForDeployment();
-      return { status: "Success", contractAddress: contract.address, txHash: contract.deploymentTransaction.hash };
+      return {
+        status: "Success",
+        contractAddress: contract.address,
+        txHash: contract.deploymentTransaction.hash
+      };
     } catch (error) {
-      await Utils.delay(1000);
-      return this.deployContract(contractName, retry + 1);
+      if (retry < maxRetries) {
+        await Utils.delay(1000);
+        return this.deployContract(contractName, retry + 1, maxRetries);
+      }
+      return { status: "Error", error: error.message };
     }
   }
 

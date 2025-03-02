@@ -36,7 +36,7 @@ class SendTxService {
     return true;
   }
   
-  async sendRandomTransaction(retry = 0) {
+  async sendRandomTransaction(retry = 0, maxRetries = 5) {
     const addresses = loadWalletAddresses();
     const randomWallet = addresses[Math.floor(Math.random() * addresses.length)];
     const randomAmount = getRandomAmount();
@@ -49,9 +49,12 @@ class SendTxService {
       await transaction.wait();
       return { status: "Success" };
     } catch (error) {
-      console.error(`Transaction failed (attempt ${retry + 1}):`, error.message);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return this.sendRandomTransaction(retry + 1);
+      if (retry < maxRetries) {
+        // console.error(`Transaction failed (attempt ${retry + 1}):`, error.message);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return this.sendRandomTransaction(retry + 1, maxRetries);
+      }
+      return { status: "Error", error: error.message };
     }
   }
 }

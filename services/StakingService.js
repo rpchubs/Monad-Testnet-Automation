@@ -26,7 +26,7 @@ class StakingService extends BaseService {
           status: receipt.status === 1 ? "Success" : "Failed",
         };
       } catch (error) {
-        console.error(`stake error, attempt ${attempt}:`, error.message);
+        // console.error(`stake error, attempt ${attempt}:`, error.message);
         if (attempt === maxRetries) {
           throw error;
         }
@@ -54,7 +54,7 @@ class StakingService extends BaseService {
           status: receipt.status === 1 ? "Success" : "Failed",
         };
       } catch (error) {
-        console.error(`unstake error, attempt ${attempt}:`, error.message);
+        // console.error(`unstake error, attempt ${attempt}:`, error.message);
         if (attempt === maxRetries) {
           throw error;
         }

@@ -57,7 +57,7 @@ class aPrioriStakingService extends BaseService {
       console.error(`Stake aPriori error (attempt ${retry + 1}): ${error.message}`);
       if (retry < maxRetries) {
         await this.utils.delay(5000);
-        return this.stakePriority(amount, retry + 1, maxRetries);
+        return this.stakeaPriori(amount, retry + 1, maxRetries);
       } else {
         throw new Error(`Stake aPriori failed after ${maxRetries} retries: ${error.message}`);
       }

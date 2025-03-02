@@ -172,7 +172,7 @@ class Application {
       const amount = Utils.getRandomAmount();
       this.dashboard.setCycles(this.cycleCount, config.cycles.default);
 
-      const formattedAmount = parseFloat(ethers.formatEther(amount)).toFixed(4);
+      const formattedAmount = parseFloat(ethers.formatEther(amount)).toFixed(8);
       this.dashboard.updateLog(`Starting cycle ${this.cycleCount} with ${formattedAmount} MON`);
 
       this.transactionHistory.push({

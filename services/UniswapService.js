@@ -65,7 +65,7 @@ class UniswapService extends BaseService {
     return true;
   }
 
-  async swapEthForTokens(tokenSymbol, amountInWei) {
+  async swapEthForTokens(tokenSymbol, amountInWei, retry = 0, maxRetries = 5) {
     try {
       if (this.checkGasPrice) await this.checkGasPrice();
       const tokenAddress = this.tokenAddresses[tokenSymbol];
@@ -73,6 +73,7 @@ class UniswapService extends BaseService {
       const path = [this.wethAddress, tokenAddress];
       const deadline = Math.floor(Date.now() / 1000) + 6 * 3600;
       const nonce = await this.wallet.getNonce();
+
       const tx = await this.routerContract.swapExactETHForTokens(
         0,
         path,
@@ -87,26 +88,32 @@ class UniswapService extends BaseService {
       const receipt = await tx.wait();
       return { status: receipt.status === 1 ? "Success" : "Failed" };
     } catch (error) {
-      console.error(`Error in swapEthForTokens: ${error.message}`);
-      await Utils.delay(1000);
-      return this.swapEthForTokens(tokenSymbol, amountInWei);
+    //   console.error(`Error in swapEthForTokens (attempt ${retry + 1}): ${error.message}`);
+      if (retry < maxRetries) {
+        await Utils.delay(1000);
+        return this.swapEthForTokens(tokenSymbol, amountInWei, retry + 1, maxRetries);
+      }
+      return { status: "Error", error: error.message };
     }
   }
   
-  async swapTokensForEth(tokenSymbol) {
+  async swapTokensForEth(tokenSymbol, retry = 0, maxRetries = 5) {
     try {
       if (this.checkGasPrice) await this.checkGasPrice();
       const tokenAddress = this.tokenAddresses[tokenSymbol];
       if (!tokenAddress) throw new Error(`Token ${tokenSymbol} does not exist in config`);
+
       const tokenContract = new ethers.Contract(tokenAddress, this.erc20ABI, this.wallet);
       const balance = await tokenContract.balanceOf(this.wallet.address);
       if (balance === 0n) {
         return { status: "NoBalance" };
       }
       await this.approveTokenIfNeeded(tokenAddress, balance, this.wallet.address);
+
       const nonce = await this.wallet.getNonce();
       const path = [tokenAddress, this.wethAddress];
       const deadline = Math.floor(Date.now() / 1000) + 6 * 3600;
+
       const tx = await this.routerContract.swapExactTokensForETH(
         balance,
         0,
@@ -121,9 +128,12 @@ class UniswapService extends BaseService {
       const receipt = await tx.wait();
       return { status: receipt.status === 1 ? "Success" : "Failed" };
     } catch (error) {
-      console.error(`Error in swapTokensForEth: ${error.message}`);
-      await Utils.delay(1000);
-      return this.swapTokensForEth(tokenSymbol);
+    //   console.error(`Error in swapTokensForEth (attempt ${retry + 1}): ${error.message}`);
+      if (retry < maxRetries) {
+        await Utils.delay(1000);
+        return this.swapTokensForEth(tokenSymbol, retry + 1, maxRetries);
+      }
+      return { status: "Error", error: error.message };
     }
   }
 
